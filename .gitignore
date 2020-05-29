@@ -240,3 +240,4 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+fitnessdb-ssdt/fitnessdb-ssdt.jfm
