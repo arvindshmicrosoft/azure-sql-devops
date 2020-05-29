@@ -65,4 +65,11 @@
     <Build Include="02-stored-procedure.sql" />
     <PostDeploy Include="03-data.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <SqlCmdVariable Include="SQLPassword">
+      <DefaultValue>
+      </DefaultValue>
+      <Value>$(SqlCmdVar__1)</Value>
+    </SqlCmdVariable>
+  </ItemGroup>
 </Project>

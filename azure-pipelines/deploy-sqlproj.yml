@@ -1,0 +1,46 @@
+# .NET Desktop
+# Build and run tests for .NET Desktop or Windows classic desktop solutions.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
+
+pr:
+  - master
+
+pool: 'Azure self-hosted'
+#  vmImage: 'windows-latest'
+
+variables:
+ - group: 'Secrets'
+ - name: solution
+   value: '**/*.sln'
+ - name: buildPlatform
+   value: 'Any CPU'
+ - name: buildConfiguration
+   value: 'Release'
+
+steps:
+
+- task: VSBuild@1
+  inputs:
+    solution: '$(solution)'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish DACPAC as artifact for current run'
+  inputs:
+    targetPath: $(Build.SourcesDirectory)
+    artifactName: 'sqlproj_artifacts_$(System.JobAttempt)'
+  condition: always()
+
+- task: SqlAzureDacpacDeployment@1
+  displayName: 'Deploy Azure SQL DB'
+  inputs:
+    azureSubscription: '$(azureSubscription)'
+    ServerName: '$(azureSqlServerName)'
+    DatabaseName: '$(azureSqlDBName)'
+    SqlUsername: '$(azureSqlUser)'
+    SqlPassword: '$(azureSqlPassword)'
+    DacpacFile: '$(System.DefaultWorkingDirectory)/fitnessdb-ssdt/bin/Release/fitnessdb-ssdt.dacpac'
+    DeleteFirewallRule: false
+    AdditionalArguments: '/v:SQLPassword="$(webappSqlPassword)"'
