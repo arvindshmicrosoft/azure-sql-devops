@@ -7,7 +7,7 @@ trigger:
 - master
 
 stages:
-- stage: run AZ CLI on Ubuntu
+- stage: run_on_ubuntu
   jobs:
   - job: PowerShellExec
     pool:
@@ -19,7 +19,7 @@ stages:
           scriptLocation: 'inlineScript'
           inlineScript: 'az group list'
 
-- stage: run PowerShell on Windows
+- stage: run_on_windows
   jobs:
   - job: PowerShellExec
     pool:
