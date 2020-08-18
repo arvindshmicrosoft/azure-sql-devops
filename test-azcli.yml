@@ -25,9 +25,8 @@ stages:
     pool:
       vmImage: 'windows-latest'
     steps:
-    - task: AzureCLI@2
+    - task: AzurePowerShell@4
       inputs:
-          scriptType: ps
-          azureSubscription: 'sqldevopsdemosub-test'
-          scriptLocation: 'inlineScript'
-          inlineScript: 'Get-AzResourceGroup'
+        azureSubscription: 'sqldevopsdemosub-test'
+        ScriptType: 'InlineScript'
+        Inline: 'Get-AzResourceGroup'
