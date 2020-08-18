@@ -6,12 +6,27 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'windows-latest'
+stages:
+- stage: run AZ CLI on Ubuntu
+  jobs:
+  - job: PowerShellExec
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@1
+      inputs:
+          azureSubscription: 'sqldevopsdemosub-test'
+          scriptLocation: 'inlineScript'
+          inlineScript: 'az group list'
 
-steps:
-- task: AzureCLI@1
-  inputs:
-    azureSubscription: 'sqldevopsdemosub-test'
-    scriptLocation: 'inlineScript'
-    inlineScript: 'az group list'
+- stage: run PowerShell on Windows
+  jobs:
+  - job: PowerShellExec
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - task: AzureCLI@1
+      inputs:
+          azureSubscription: 'sqldevopsdemosub-test'
+          scriptLocation: 'inlineScript'
+          inlineScript: 'Get-AzResourceGroup'
