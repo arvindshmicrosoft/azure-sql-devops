@@ -28,5 +28,6 @@ stages:
     - task: AzurePowerShell@4
       inputs:
         azureSubscription: 'sqldevopsdemosub-test'
-        ScriptType: 'InlineScript'
-        Inline: 'Get-AzResourceGroup'
+        scriptType: 'InlineScript'
+        inline: 'Get-AzResourceGroup'
+        azurePowerShellVersion: latestVersion
