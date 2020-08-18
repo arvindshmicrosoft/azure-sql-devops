@@ -9,7 +9,7 @@ trigger:
 stages:
 - stage: run_on_ubuntu
   jobs:
-  - job: PowerShellExec
+  - job: UbuntuJob
     pool:
       vmImage: 'ubuntu-latest'
     steps:
@@ -21,7 +21,7 @@ stages:
 
 - stage: run_on_windows
   jobs:
-  - job: PowerShellExec
+  - job: WindowsJob
     pool:
       vmImage: 'windows-latest'
     steps:
