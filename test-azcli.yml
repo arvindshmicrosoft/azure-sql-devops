@@ -1,0 +1,33 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+stages:
+- stage: run_on_ubuntu
+  jobs:
+  - job: UbuntuJob
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@1
+      inputs:
+          azureSubscription: 'sqldevopsdemosub-test'
+          scriptLocation: 'inlineScript'
+          inlineScript: 'az group list'
+
+- stage: run_on_windows
+  jobs:
+  - job: WindowsJob
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - task: AzurePowerShell@4
+      inputs:
+        azureSubscription: 'sqldevopsdemosub-test'
+        scriptType: 'InlineScript'
+        inline: 'Get-AzResourceGroup'
+        azurePowerShellVersion: latestVersion
