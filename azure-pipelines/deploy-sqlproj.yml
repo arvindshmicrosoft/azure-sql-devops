@@ -3,11 +3,14 @@
 # Add steps that publish symbols, save build artifacts, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
 
+
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
 pr:
   - master
-
-pool: 'Azure self-hosted'
-#  vmImage: 'windows-latest'
 
 variables:
  - group: 'Secrets'
@@ -18,29 +21,56 @@ variables:
  - name: buildConfiguration
    value: 'Release'
 
-steps:
+stages:
+- stage: CreateDB
+  jobs:
+  - job: CreateDB
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@1
+      inputs:
+          azureSubscription: 'sqldevopsdemosub-test'
+          scriptLocation: 'inlineScript'
+          inlineScript: 'az sql db create -g $(resourceGroupName) -s $(azureSqlServerResourceName) -n $(azureSqlDBName)'
 
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+- stage: BuildDACPAC
+  jobs:
+  - job: BuildDACPAC
+    pool: 'Azure self-hosted'
+    steps:
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)'
+        ArtifactName: 'sqlproj_artifacts_$(System.JobAttempt)'
+        publishLocation: 'Container'
 
-- task: PublishPipelineArtifact@1
-  displayName: 'Publish DACPAC as artifact for current run'
-  inputs:
-    targetPath: $(Build.SourcesDirectory)
-    artifactName: 'sqlproj_artifacts_$(System.JobAttempt)'
-  condition: always()
-
-- task: SqlAzureDacpacDeployment@1
-  displayName: 'Deploy Azure SQL DB'
-  inputs:
-    azureSubscription: '$(azureSubscription)'
-    ServerName: '$(azureSqlServerName)'
-    DatabaseName: '$(azureSqlDBName)'
-    SqlUsername: '$(azureSqlUser)'
-    SqlPassword: '$(azureSqlPassword)'
-    DacpacFile: '$(System.DefaultWorkingDirectory)/fitnessdb-ssdt/bin/Release/fitnessdb-ssdt.dacpac'
-    DeleteFirewallRule: false
-    AdditionalArguments: '/v:SQLPassword="$(webappSqlPassword)"'
+- stage: DeployDB
+  jobs:
+  - deployment: NeedApprovalforDBDeploy
+    environment: Production
+  - job: DeployDACPAC
+    pool: 'Azure self-hosted'
+    steps:
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'sqlproj_artifacts_$(System.JobAttempt)'
+        downloadPath: '$(System.ArtifactsDirectory)'
+    - task: SqlAzureDacpacDeployment@1
+      displayName: 'Deploy Azure SQL DB'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        ServerName: '$(azureSqlServerName)'
+        DatabaseName: '$(azureSqlDBName)'
+        SqlUsername: '$(azureSqlUser)'
+        SqlPassword: '$(azureSqlPassword)'
+        DacpacFile: '$(System.ArtifactsDirectory)/sqlproj_artifacts_$(System.JobAttempt)/fitnessdb-ssdt/bin/Release/fitnessdb-ssdt.dacpac'
+        DeleteFirewallRule: false
+        AdditionalArguments: '/v:SQLPassword="$(webappSqlPassword)"'
