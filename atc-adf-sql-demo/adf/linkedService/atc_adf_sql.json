@@ -1,0 +1,17 @@
+{
+	"name": "atc_adf_sql",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "atc_adf_sql_akv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "wwi-sql-db"
+			}
+		}
+	}
+}
