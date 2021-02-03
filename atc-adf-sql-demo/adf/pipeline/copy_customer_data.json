@@ -1,0 +1,192 @@
+{
+	"name": "copy_customer_data",
+	"properties": {
+		"activities": [
+			{
+				"name": "reference_data_pipeline",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink"
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "Customer Key",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Customer Key",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "WWI Customer ID",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "WWI Customer ID",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "Customer",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Customer",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Bill To Customer",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Bill To Customer",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Category",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Category",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Buying Group",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Buying Group",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Primary Contact",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Primary Contact",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Postal Code",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Postal Code",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Valid From",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Valid From",
+									"type": "DateTime",
+									"physicalType": "datetime2"
+								}
+							},
+							{
+								"source": {
+									"name": "Valid To",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Valid To",
+									"type": "DateTime",
+									"physicalType": "datetime2"
+								}
+							},
+							{
+								"source": {
+									"name": "Lineage Key",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Lineage Key",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "customer_csv",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "customer_sql_table",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": []
+	}
+}

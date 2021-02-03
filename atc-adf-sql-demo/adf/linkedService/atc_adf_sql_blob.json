@@ -1,0 +1,17 @@
+{
+	"name": "atc_adf_sql_blob",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"sasUri": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "atc_adf_sql_akv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "wwi-blob-sas"
+			}
+		}
+	}
+}

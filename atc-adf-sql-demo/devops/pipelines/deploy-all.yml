@@ -1,0 +1,128 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+ - group: 'secrets'
+ - name: solution
+   value: '**/*.sln'
+ - name: buildPlatform
+   value: 'Any CPU'
+ - name: buildConfiguration
+   value: 'Release'
+
+steps:
+- task: AzureCLI@2
+  displayName: 'Create and configure Azure SQL logical server'
+  inputs:
+    azureSubscription: '$(subscription-name)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az sql server create --resource-group $(resource-group-name) --name $(logical-sql-server-name) --admin-user $(sql-admin-login) --admin-password $(sql-password)
+
+      az sql server ad-admin create --resource-group $(resource-group-name) --server-name $(logical-sql-server-name) --display-name $(az ad sp show --id $(az account show --query user.name --output tsv) --query appDisplayName --output tsv) --object-id $(az account show --query user.name --output tsv)
+
+      az sql server firewall-rule create -g $(resource-group-name) -s $(logical-sql-server-name) -n allow-azure-services --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
+
+- task: AzureCLI@2
+  displayName: 'Create Azure SQL Elastic Pool and Database'
+  inputs:
+    azureSubscription: '$(subscription-name)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az sql elastic-pool create -g $(resource-group-name) -s $(logical-sql-server-name) -n $(elastic-pool-name) -e GeneralPurpose -f Gen4 -c 1
+
+      az sql db create --resource-group $(resource-group-name) --server $(logical-sql-server-name) --name $(sql-database-name) --elastic-pool $(elastic-pool-name)
+
+- task: VSBuild@1
+  displayName: 'Build DACPAC from SQL Database Project'
+  inputs:
+    solution: '$(solution)'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish SQL Project output as Azure DevOps artifacts'
+  inputs:
+    PathtoPublish: '$(System.DefaultWorkingDirectory)/sql'
+    ArtifactName: 'sqlproj_artifacts_$(System.JobAttempt)'
+    publishLocation: 'Container'
+
+- task: DownloadBuildArtifacts@0
+  displayName: 'Download the artifacts'
+  inputs:
+    buildType: 'current'
+    downloadType: 'single'
+    artifactName: 'sqlproj_artifacts_$(System.JobAttempt)'
+    downloadPath: '$(System.ArtifactsDirectory)'
+
+- task: SqlAzureDacpacDeployment@1
+  displayName: 'Deploy Azure SQL DB'
+  inputs:
+    azureSubscription: '$(subscription-name)'
+    AuthenticationType: 'servicePrincipal'
+    ServerName: '$(logical-sql-server-name).database.windows.net'
+    DatabaseName: '$(sql-database-name)'
+    deployType: 'DacpacTask'
+    DeploymentAction: 'Publish'
+    DacpacFile: '$(System.ArtifactsDirectory)/sqlproj_artifacts_$(System.JobAttempt)/wwi-dw-ssdt/bin/Release/WideWorldImportersDW.dacpac'
+    AdditionalArguments: '/v:ETLUserPassword="$(sql-password)" /v:AppUserPassword="$(sql-password)"'
+    IpDetectionMethod: 'AutoDetect'
+    DeleteFirewallRule: false
+
+- task: PublishADFTask@1
+  displayName: 'Publish Azure Data Factory'
+  inputs:
+    azureSubscription: '$(subscription-name)'
+    ResourceGroupName: '$(resource-group-name)'
+    DataFactoryName: '$(data-factory-name)'
+    DataFactoryCodePath: '$(System.DefaultWorkingDirectory)/adf'
+    Location: 'eastus'
+    PublishMethod: 'AzResource'
+
+- task: AzurePowerShell@5
+  displayName: 'Allow ADF to access AKV'
+  inputs:
+    azureSubscription: '$(subscription-name)'
+    ScriptType: 'InlineScript'
+    Inline: 'Set-AzKeyVaultAccessPolicy -VaultName "$(akv-name)" -ObjectId ((Get-AzDataFactoryV2 -ResourceGroupName "$(resource-group-name)" -Name "$(data-factory-name)").Identity.PrincipalId) -PermissionsToSecrets @("get","list") -BypassObjectIdValidation'
+    azurePowerShellVersion: 'LatestVersion'
+
+- task: AzurePowerShell@5
+  displayName: 'Run and wait for ADF pipeline to complete'
+  inputs:
+    azureSubscription: '$(subscription-name)'
+    ScriptType: 'InlineScript'
+    Inline: |
+      $DataFactoryName = "$(data-factory-name)"
+      $resourceGroupName = "$(resource-group-name)"
+
+      $runId = Invoke-AzDataFactoryV2Pipeline -DataFactoryName "$(data-factory-name)" -ResourceGroupName "$(resource-group-name)" -PipelineName "copy_customer_data"
+
+      while ($True) {
+          $run = Get-AzDataFactoryV2PipelineRun -ResourceGroupName $resourceGroupName -DataFactoryName $DataFactoryName -PipelineRunId $runId
+
+          if ($run) {
+              if ($run.Status -ne 'InProgress') {
+                  Write-Host "ADF Pipeline run finished. The status is: " $run.Status -foregroundcolor "Yellow"
+                  $run
+                  if ($run.Status -ne "Succeeded") {
+                      throw ("ADF Pipeline failed")
+                  }
+                  break
+              }
+              Write-Host  "Pipeline is running...status: InProgress" -foregroundcolor "Yellow"
+          }
+
+          Start-Sleep -Seconds 5
+      }
+    azurePowerShellVersion: 'LatestVersion'

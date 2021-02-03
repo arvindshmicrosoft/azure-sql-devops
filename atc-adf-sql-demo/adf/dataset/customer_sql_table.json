@@ -1,0 +1,16 @@
+{
+	"name": "customer_sql_table",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "atc_adf_sql",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "Dimension",
+			"table": "Customer"
+		}
+	}
+}

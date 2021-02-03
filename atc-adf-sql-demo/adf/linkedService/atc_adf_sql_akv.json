@@ -1,0 +1,10 @@
+{
+	"name": "atc_adf_sql_akv",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://someakv.vault.azure.net"
+		}
+	}
+}
