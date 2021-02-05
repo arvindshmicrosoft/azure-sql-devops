@@ -1,0 +1,27 @@
+name: .NET Core
+
+on:
+  push:
+    branches: [ add-pipeline ]
+  pull_request:
+    branches: [ add-pipeline ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+    - name: Change folder and install depen
+      run: cd fitnessdb-dbup; dotnet restore
+    - name: Run
+      env: # as an environment variable
+        ConnectionString: ${{ secrets.CONNECTIONSTRING }}
+        SQLPassword: ${{ secrets.SQLPASSWORD }}
+      run: cd fitnessdb-dbup; dotnet run
+  
